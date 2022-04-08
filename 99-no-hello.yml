@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: no-hello-deployment
+  namespace: workshop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      role: no-hello-app
+  template:
+    metadata:
+      labels:
+        role: no-hello-app
+    spec:
+      containers:
+      - name: no-hello-container
+        image: adambrosio/no-hello-world:0.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "200m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: no-hello-service
+  namespace: workshop
+spec:
+  selector:
+    role: no-hello-app
+  ports:
+  - port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: no-hello-ingress
+  namespace: workshop
+spec:
+  rules:
+  - http:
+      paths:
+      - pathType: Prefix
+        path: "/no-hello"
+        backend:
+          service:
+            name: no-hello-service
+            port:
+              number: 8080
+---
